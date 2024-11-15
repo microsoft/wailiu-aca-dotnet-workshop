@@ -50,11 +50,7 @@ However, we want to have more control and provide our own component file, so let
 
 To try out the Pub/Sub API, run the Backend API from VS Code by running the below command or using the Run and Debug tasks we have created in the [appendix](../30-appendix/01-run-debug-dapr-app-vscode.md).
 
-=== ".NET 6 or below"
-
-    --8<-- "snippets/dapr-run-backend-api.md:dapr-components-dotnet6"
-
-=== ".NET 7 or above"
+=== ".NET 8 or above"
 
     --8<-- "snippets/dapr-run-backend-api.md:dapr-components"
 
@@ -98,15 +94,9 @@ Now we will add a new ASP.NET Core Web API project named **TasksTracker.Processo
 
 !!! note "Controller-Based vs. Minimal APIs"
 
-    APIs can be created via the traditional, expanded controller-based structure with _Controllers_ and _Models_ folders, etc. or via the newer minimal APIs approach where controller actions are written inside _Program.cs_. The latter approach is preferential in a microservices project where the endpoints are overseeable and may easily be represented by a more compact view.  
-    
+    APIs can be created via the traditional, expanded controller-based structure with _Controllers_ and _Models_ folders, etc. or via the newer minimal APIs approach where controller actions are written inside _Program.cs_. The latter approach is preferential in a microservices project where the endpoints are overseeable and may easily be represented by a more compact view.
+
     As our workshop takes advantage of microservices, the use case for minimal APIs is given. However, in order to make the workshop a bit more demonstrable, we will, for now, stick with controller-based APIs.
-
-=== ".NET 7 or below"
-
-    ```shell
-    dotnet new webapi -o TasksTracker.Processor.Backend.Svc
-    ```
 
 === ".NET 8 or above"
 
@@ -135,30 +125,20 @@ Now we will add the model which will be used to deserialize the published messag
 
 Now we will install Dapr SDK to be able to subscribe to the service broker topic in a programmatic way. Add the highlighted NuGet package to the file shown below:
 
-=== ".NET 6"
-
-    === "TasksTracker.Processor.Backend.Svc.csproj"
-
-        ```xml
-        <ItemGroup>
-          <PackageReference Include="Dapr.AspNetCore" Version="{{ dapr.version }}" />
-        </ItemGroup>
-        ```
-
-=== ".NET 7"
-
-    === "TasksTracker.Processor.Backend.Svc.csproj"
-
-        ```xml hl_lines="10"
-        --8<-- "docs/aca/05-aca-dapr-pubsubapi/Backend.Svc-dotnet7.csproj"
-        ```
-
 === ".NET 8"
 
     === "TasksTracker.Processor.Backend.Svc.csproj"
 
         ```xml hl_lines="11"
         --8<-- "docs/aca/05-aca-dapr-pubsubapi/Backend.Svc-dotnet8.csproj"
+        ```
+
+=== ".NET 9"
+
+    === "TasksTracker.Processor.Backend.Svc.csproj"
+
+        ```xml hl_lines="10"
+        --8<-- "docs/aca/05-aca-dapr-pubsubapi/Backend.Svc-dotnet9.csproj"
         ```
 
 #### 2.4 Create an API Endpoint for the Consumer to Subscribe to the Topic
@@ -174,14 +154,14 @@ Now we will add an endpoint that will be responsible to subscribe to the topic i
 ??? tip "Curious about what we have done so far?"
 
     - We have added an action method named `TaskSaved` which can be accessed on the route `api/tasksnotifier/tasksaved`
-    - We have attributed this action method with the attribute `Dapr.Topic` which accepts the Dapr Pub/Sub component to target as the first argument, 
+    - We have attributed this action method with the attribute `Dapr.Topic` which accepts the Dapr Pub/Sub component to target as the first argument,
     and the second argument is the topic to subscribe to, which in our case is `tasksavedtopic`.
     - The action method expects to receive a `TaskModel` object.
-    - Now once the message is received by this endpoint, we can start out the business logic to trigger sending an email (more about this next) and then return `200 OK` response to indicate that the consumer 
+    - Now once the message is received by this endpoint, we can start out the business logic to trigger sending an email (more about this next) and then return `200 OK` response to indicate that the consumer
     processed the message successfully and the broker can delete this message.
-    - If anything went wrong during sending the email (i.e. Email service not responding) and we want to retry processing this message at a later time, we return `400 Bad Request`, 
+    - If anything went wrong during sending the email (i.e. Email service not responding) and we want to retry processing this message at a later time, we return `400 Bad Request`,
     which will inform the message broker that the message needs to be retired based on the configuration in the message broker.
-    - If we need to drop the message as we are aware it will not be processed even after retries (i.e Email to is not formatted correctly) we return a `404 Not Found` response. 
+    - If we need to drop the message as we are aware it will not be processed even after retries (i.e Email to is not formatted correctly) we return a `404 Not Found` response.
     This will tell the message broker to drop the message and move it to dead-letter or poison queue.
 
 You may be wondering how the consumer was able to identify what are the subscriptions available and on which route they can be found at.
@@ -204,27 +184,27 @@ In our case, a sample response will be as follows:
 ```
 
 !!! tip
-    Follow this [link](https://learn.microsoft.com/en-us/dotnet/architecture/dapr-for-net-developers/publish-subscribe#how-it-works){target=_blank} to find a detailed diagram of how the consumers will discover and subscribe to
+    Follow this [link](https://learn.microsoft.com/dotnet/architecture/dapr-for-net-developers/publish-subscribe#how-it-works){target=_blank} to find a detailed diagram of how the consumers will discover and subscribe to
     those endpoints.
 
 #### 2.5 Register Dapr and Subscribe Handler at the Consumer Startup
 
 Update below file in **TasksTracker.Processor.Backend.Svc** project.
 
-=== ".NET 6"
-
-    === "Program.cs"
-    
-        ```csharp hl_lines="9 13 15"
-        --8<-- "docs/aca/05-aca-dapr-pubsubapi/Program-dotnet6.cs"
-        ```
-
-=== ".NET 7 or above"
+=== ".NET 8"
 
     === "Program.cs"
 
         ```csharp hl_lines="5 23 27"
-        --8<-- "docs/aca/05-aca-dapr-pubsubapi/Program.cs"
+        --8<-- "docs/aca/05-aca-dapr-pubsubapi/Program-dotnet8.cs"
+        ```
+
+=== ".NET 9"
+
+    === "Program.cs"
+
+        ```csharp hl_lines="5 22 26"
+        --8<-- "docs/aca/05-aca-dapr-pubsubapi/Program-dotnet9.cs"
         ```
 
 - Let's verify that the Dapr dependency is restored properly and that the project compiles. From VS Code Terminal tab, open developer command prompt or PowerShell terminal and navigate to the parent directory which hosts the `.csproj` project folder and build the project.
@@ -236,13 +216,13 @@ Update below file in **TasksTracker.Processor.Backend.Svc** project.
 
 ??? tip "Curious about the code above?"
 
-    - On line `builder.Services.AddControllers().AddDapr();`, the extension method `AddDapr` registers the necessary services to integrate Dapr into the MVC pipeline. 
+    - On line `builder.Services.AddControllers().AddDapr();`, the extension method `AddDapr` registers the necessary services to integrate Dapr into the MVC pipeline.
     It also registers a `DaprClient` instance into the dependency injection container, which then can be injected anywhere into your service.
     We will see how we are injecting DaprClient in the controller constructor later on.
-    - On line `app.UseCloudEvents();`, the extension method `UseCloudEvents` adds CloudEvents middleware into the ASP.NET Core middleware pipeline. 
-    This middleware will unwrap requests that use the CloudEvents structured format, so the receiving method can read the event payload directly. 
+    - On line `app.UseCloudEvents();`, the extension method `UseCloudEvents` adds CloudEvents middleware into the ASP.NET Core middleware pipeline.
+    This middleware will unwrap requests that use the CloudEvents structured format, so the receiving method can read the event payload directly.
     You can read more about [CloudEvents](https://cloudevents.io/){target=_blank} here which includes specs for describing event data in a common and standard way.
-    - On line `app.MapSubscribeHandler();`, we make the endpoint `http://localhost:<appPort>/dapr/subscribe` available for the consumer so it responds and returns available subscriptions. 
+    - On line `app.MapSubscribeHandler();`, we make the endpoint `http://localhost:<appPort>/dapr/subscribe` available for the consumer so it responds and returns available subscriptions.
     When this endpoint is called, it will automatically find all WebAPI action methods decorated with the `Dapr.Topic` attribute and instruct Dapr to create subscriptions for them.
 
 With all those bits in place, we are ready to run the publisher service `Backend API` and the consumer service `Backend Background Service` and test Pub/Sub pattern end to end.
@@ -257,12 +237,7 @@ To do so, run the below commands in two separate PowerShell console, ensure you 
 
 --8<-- "snippets/restore-variables.md:7:11"
 
-=== ".NET 6 or below"
-
-    --8<-- "snippets/dapr-run-backend-api.md:dapr-components-dotnet6"
-    --8<-- "snippets/dapr-run-backend-service.md:dapr-components-dotnet6"
-
-=== ".NET 7 or above"
+=== ".NET 8 or above"
 
     --8<-- "snippets/dapr-run-backend-api.md:dapr-components"
     --8<-- "snippets/dapr-run-backend-service.md:dapr-components"
@@ -276,7 +251,7 @@ Now let's try to publish a message by sending a **POST** request to [http://loca
 POST /v1.0/publish/taskspubsub/tasksavedtopic HTTP/1.1
 Host: localhost:3500
 Content-Type: application/json
-        
+
 {
     "taskId": "fbc55b2c-d9fa-405e-aec8-22e53f4306dd",
     "taskName": "Testing Pub Sub Publisher",
@@ -303,15 +278,15 @@ If you have followed the steps in the [appendix](../30-appendix/01-run-debug-dap
 ??? example "Click to expand the files to update"
 
     You can use the below files to update the existing ones.
-    
+
     === "tasks.json"
-    
+
         ```json
         --8<-- "docs/aca/05-aca-dapr-pubsubapi/tasks.json"
         ```
 
     === "launch.json"
-    
+
         ```json
         --8<-- "docs/aca/05-aca-dapr-pubsubapi/launch.json"
         ```
@@ -324,7 +299,7 @@ To do this, update below file under the project **TasksTracker.TasksManager.Back
 
 === "TasksStoreManager.cs"
 
-    ```csharp hl_lines="33 88-91 97-102"
+    ```csharp hl_lines="33 92-95 101-106"
     --8<-- "docs/aca/05-aca-dapr-pubsubapi/TasksStoreManager.cs"
     ```
 
@@ -347,7 +322,7 @@ Now we will switch our implementation to use Azure Service Bus as a message brok
 #### 3.1 Create Azure Service Bus Namespace and a Topic
 
 You can do this from [Azure portal](https://portal.azure.com){target=_blank} or use the below PowerShell command to create the services. We will assume you are using the same PowerShell session from the previous module so variables still hold the right values.
-You need to change the namespace variable as this one should be unique globally across all Azure subscriptions. Also, you will notice that we are opting for standard sku (default if not passed) as topics only available on the standard tier not and not on the basic tier. More details can be found [here](https://learn.microsoft.com/en-us/cli/azure/servicebus/namespace?view=azure-cli-latest#az-servicebus-namespace-create-optional-parameters){target=_blank}.
+You need to change the namespace variable as this one should be unique globally across all Azure subscriptions. Also, you will notice that we are opting for standard sku (default if not passed) as topics only available on the standard tier not and not on the basic tier. More details can be found [here](https://learn.microsoft.com/cli/azure/servicebus/namespace?view=azure-cli-latest#az-servicebus-namespace-create-optional-parameters){target=_blank}.
 
 ```shell
 $SERVICE_BUS_NAMESPACE_NAME="sbns-taskstracker-$RANDOM_STRING"
@@ -390,9 +365,9 @@ We need to add a new [Dapr Azure Service Bus Topic component](https://docs.dapr.
 !!! note
     We used the name `dapr-pubsub-servicebus` which should match the name of Pub/Sub component we've used earlier in the `TasksNotifierController.cs` controller on the action method with the attribute `Topic`.
 
-    We set the metadata (key/value) to allow us to connect to Azure Service Bus topic. The metadata `consumerID` value should match the topic subscription name `sbts-tasks-processor`. 
+    We set the metadata (key/value) to allow us to connect to Azure Service Bus topic. The metadata `consumerID` value should match the topic subscription name `sbts-tasks-processor`.
 
-    We have set the scopes section to include the `tasksmanager-backend-api` and `tasksmanager-backend-processor` app ids, as those will be the Dapr apps that need access to Azure Service Bus for publishing and 
+    We have set the scopes section to include the `tasksmanager-backend-api` and `tasksmanager-backend-processor` app ids, as those will be the Dapr apps that need access to Azure Service Bus for publishing and
     consuming the messages.
 
 #### 3.3 Create an ACA Dapr Component file for Pub/Sub API Using Azure Service Bus
@@ -418,12 +393,7 @@ With all those bits in place, we are ready to run the publisher service `Backend
 !!! note
     Ensure you are on the right root folder of each respective project.
 
-=== ".NET 6 or below"
-
-    --8<-- "snippets/dapr-run-backend-api.md:dapr-components-dotnet6"
-    --8<-- "snippets/dapr-run-backend-service.md:dapr-components-dotnet6"
-
-=== ".NET 7 or above"
+=== ".NET 8 or above"
 
     --8<-- "snippets/dapr-run-backend-api.md:dapr-components"
     --8<-- "snippets/dapr-run-backend-service.md:dapr-components"
@@ -465,7 +435,7 @@ $BACKEND_SERVICE_NAME="tasksmanager-backend-processor"
 az acr build `
 --registry $AZURE_CONTAINER_REGISTRY_NAME `
 --image "tasksmanager/$BACKEND_API_NAME" `
---file 'TasksTracker.TasksManager.Backend.Api/Dockerfile' . 
+--file 'TasksTracker.TasksManager.Backend.Api/Dockerfile' .
 
 az acr build `
 --registry $AZURE_CONTAINER_REGISTRY_NAME `
@@ -506,7 +476,7 @@ az containerapp create `
 We need to update the Azure Container App hosting the Backend API with a new revision so our code changes for publishing messages after a task is saved is available for users.
 
 ```shell
-# Update Backend API App container app and create a new revision 
+# Update Backend API App container app and create a new revision
 az containerapp update `
 --name $BACKEND_API_NAME `
 --resource-group $RESOURCE_GROUP `
@@ -530,7 +500,7 @@ az containerapp env dapr-component set `
 
 ### 5. Configure Managed Identities for Both Container Apps
 
-In the previous module we have [already configured](../04-aca-dapr-stateapi/index.md#configure-managed-identities-in-container-app) and used system-assigned identity for the Backend API container app. We follow the same steps here to create an association between the backend processor container app and Azure Service Bus.
+In the previous module we have [already configured](../04-aca-dapr-stateapi/index.md#33-configure-managed-identities-in-container-app) and used system-assigned identity for the Backend API container app. We follow the same steps here to create an association between the backend processor container app and Azure Service Bus.
 
 #### 5.1 Create system-assigned identity for Backend Processor App
 
@@ -599,27 +569,29 @@ Lastly, we need to restart both container apps revisions to pick up the role ass
 
 ```shell
 # Get revision name and assign it to a variable
-$REVISION_NAME = (az containerapp revision list `
-        --name $BACKEND_SERVICE_NAME  `
+$BACKEND_SERVICE_REVISION_NAME = (az containerapp revision list `
+        --name $BACKEND_SERVICE_NAME `
         --resource-group $RESOURCE_GROUP `
-        --query [0].name)
+        --query [0].name `
+        --output tsv)
 
 # Restart revision by name
 az containerapp revision restart `
 --resource-group $RESOURCE_GROUP `
 --name $BACKEND_SERVICE_NAME  `
---revision $REVISION_NAME
+--revision $BACKEND_SERVICE_REVISION_NAME
 
-$REVISION_NAME = (az containerapp revision list `
-        --name $BACKEND_API_NAME  `
+$BACKEND_API_REVISION_NAME = (az containerapp revision list `
+        --name $BACKEND_API_NAME `
         --resource-group $RESOURCE_GROUP `
-        --query [0].name)
+        --query [0].name `
+        --output tsv)
 
 # Restart revision by name
 az containerapp revision restart `
 --resource-group $RESOURCE_GROUP `
 --name $BACKEND_API_NAME  `
---revision $REVISION_NAME
+--revision $BACKEND_API_REVISION_NAME
 ```
 
 !!! Success

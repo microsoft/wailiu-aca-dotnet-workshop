@@ -11,9 +11,10 @@ on:
   workflow_dispatch: {}
 
 permissions:
-    contents: write
-    pages: write
-    id-token: write
+  contents: write         # Required for checkout and upload-pages-artifact actions
+  deployments: write      # Required for deploy-pages action
+  id-token: write         # Required for deploy-pages action if using OIDC for authentication
+  pages: write            # Required for configure-pages, upload-pages-artifact, and deploy-pages actions
 
 concurrency:
   group: "pages"
@@ -24,9 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Build
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Capture branch and tag

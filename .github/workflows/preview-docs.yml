@@ -14,6 +14,14 @@ on:
       - 'mkdocs.yml'
       - 'Makefile'
 
+permissions:
+  actions: write          # Required for pr-preview-action
+  contents: write         # Required for the checkout action to know to kick off (read) and pr-preview-action (write)
+  deployments: write      # Required for pr-preview-action
+  id-token: write         # Required for pr-preview-action
+  pages: write            # Required for pr-preview-action
+  pull-requests: write    # Required for pr-preview-action
+
 concurrency:
   group: preview-${{ github.ref }}
   cancel-in-progress: true
@@ -23,9 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Build
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Capture branch and tag

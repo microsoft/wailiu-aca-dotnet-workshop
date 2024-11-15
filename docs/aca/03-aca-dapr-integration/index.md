@@ -26,7 +26,7 @@ The Tasks Tracker microservice application is composed of multiple microservices
 we need to account for failures, retries, and timeouts. While Azure Container Apps features the building blocks for running microservices, using the Distributed Application Runtime (Dapr) provides an even richer microservices programming model.
 
 Dapr includes features like service discovery, pub/sub, service-to-service invocation with mutual TLS, retries, state store management, and more.
-Here is a good [link](https://learn.microsoft.com/en-us/dotnet/architecture/dapr-for-net-developers/service-invocation){target=_blank} which touches on some of the benefits of the Dapr service invocation building block which we will be building upon in this module.
+Here is a good [link](https://learn.microsoft.com/dotnet/architecture/dapr-for-net-developers/service-invocation){target=_blank} which touches on some of the benefits of the Dapr service invocation building block which we will be building upon in this module.
 Because the calls will flow through container sidecars, Dapr can inject some useful cross-cutting behaviors that are meaningfully abstracted from our application containers.
 
 Although we won't tap into all these benefits in this workshop, it's worth noting that you will probably need to rely on these features in production:
@@ -68,11 +68,7 @@ You are now ready to run the applications locally using the Dapr sidecar in a se
 
 #### 2.2 Test `{{ apps.backend }}` Locally
 
-=== ".NET 6 or below"
-
-    --8<-- "snippets/dapr-run-backend-api.md:basic-dotnet6"
-
-=== ".NET 7 or above"
+=== ".NET 8 or above"
 
     --8<-- "snippets/dapr-run-backend-api.md:basic"
 
@@ -131,65 +127,45 @@ You are now ready to run the applications locally using the Dapr sidecar in a se
 
 - Install Dapr SDK for .NET Core in the Frontend Web APP, so we can use the service discovery and service invocation offered by Dapr Sidecar. To do so, add below nuget package to the project.
 
-    === ".NET 6"
-        === "TasksTracker.WebPortal.Frontend.Ui.csproj"
-
-            ```xml
-            <ItemGroup>
-              <PackageReference Include="Dapr.AspNetCore" Version="{{ dapr.version }}" />
-            </ItemGroup>
-            ```
-
-    === ".NET 7"
-        === "TasksTracker.WebPortal.Frontend.Ui.csproj"
-
-            ```xml hl_lines="9-11"
-            --8<-- "docs/aca/03-aca-dapr-integration/Frontend.Ui-dotnet7.csproj"
-            ```
-
     === ".NET 8"
+
         === "TasksTracker.WebPortal.Frontend.Ui.csproj"
 
             ```xml hl_lines="9-11"
             --8<-- "docs/aca/03-aca-dapr-integration/Frontend.Ui-dotnet8.csproj"
             ```
 
-    - Next, open the file `Programs.cs` of the Frontend Web App and register the DaprClient as the highlighted below.
+    === ".NET 9"
 
-    === ".NET 6"
-        === "Program.cs"
+        === "TasksTracker.WebPortal.Frontend.Ui.csproj"
 
-            ```csharp hl_lines="11"
-            namespace TasksTracker.WebPortal.Frontend.Ui
-            {
-                public class Program
-                {
-                    public static void Main(string[] args)
-                    {
-                        var builder = WebApplication.CreateBuilder(args);
-                        // Add services to the container.
-                        builder.Services.AddRazorPages();
-                        // Code removed for brevity
-                        builder.Services.AddDaprClient();
-                        var app = builder.Build();
-                        // Code removed for brevity 
-                    }
-                }
-            }
+            ```xml hl_lines="9-11"
+            --8<-- "docs/aca/03-aca-dapr-integration/Frontend.Ui-dotnet9.csproj"
             ```
 
-    === ".NET 7 or above"
+    - Next, open the file `Programs.cs` of the Frontend Web App and register the DaprClient as the highlighted below.
+
+    === ".NET 8"
+
         === "Program.cs"
 
             ```csharp hl_lines="6"
-            --8<-- "docs/aca/03-aca-dapr-integration/Program.cs"
+            --8<-- "docs/aca/03-aca-dapr-integration/Program-dotnet8.cs"
+            ```
+
+    === ".NET 9"
+
+        === "Program.cs"
+
+            ```csharp hl_lines="6"
+            --8<-- "docs/aca/03-aca-dapr-integration/Program-dotnet9.cs"
             ```
 
 - Now, we will inject the DaprClient into the `.cshtml` pages to use the method `InvokeMethodAsync` (second approach). Update files under folder **Pages\Tasks** and use the code below for different files.
 
     === "Index.cshtml.cs"
 
-        ```csharp    
+        ```csharp
         --8<-- "docs/aca/03-aca-dapr-integration/Tasks.Index.cshtml.cs"
         ```
 
@@ -203,7 +179,7 @@ You are now ready to run the applications locally using the Dapr sidecar in a se
 
         ```csharp
         --8<-- "docs/aca/03-aca-dapr-integration/Edit.cshtml.cs"
-        ``` 
+        ```
 
 ???+ tip
     Notice how we are not using the `HttpClientFactory` anymore and how we were able from the Frontend Dapr Sidecar to invoke backend API Sidecar using the method `InvokeMethodAsync` which accepts the Dapr **remote App ID** for the Backend API `tasksmanager-backend-api` and it will be able to discover the URL and invoke the method based on the specified input params.
@@ -230,13 +206,7 @@ We are ready now to verify the changes on the Frontend Web App and test locally.
 
 - In each of the two terminals previously opened, run the frontend UI and backend API respectively.
 
-    === ".NET 6 or below"
-
-        --8<-- "snippets/dapr-run-frontend-webapp.md:basic-dotnet6"
-
-        --8<-- "snippets/dapr-run-backend-api.md:basic-dotnet6"
-
-    === ".NET 7 or above"
+    === ".NET 8 or above"
 
         --8<-- "snippets/dapr-run-frontend-webapp.md:basic"
 
@@ -250,7 +220,7 @@ We are ready now to verify the changes on the Frontend Web App and test locally.
 #### 2.5 Test `{{ apps.frontend }}` and `{{ apps.backend }}` Locally Using Dapr
 
 !!! success
-    Now both Applications are running using Dapr sidecar. Open the local frontend UI URL, ignore the certificate warning locally, then provide an email to load the tasks for the user (e.g. `tjoudeh@bitoftech.net`). If the application is working as expected you should see tasks list associated with the email you provided.
+    Now both Applications are running using Dapr sidecar. Note how ports 3500 and 3501 are used when starting the container apps. These ports instruct the container runtime to communicate with the Dapr sidecar, whereas the https ports from the appsettings files are the ports you use to launch the application locally. Open the local frontend UI URL (use `$FRONTEND_UI_BASE_URL_LOCAL` from step 2.4), ignore the certificate warning locally, then provide an email to load the tasks for the user (e.g. `tjoudeh@bitoftech.net`). If the application is working as expected you should see tasks list associated with the email you provided.
 
 - Close the sessions and navigate to the root.
 

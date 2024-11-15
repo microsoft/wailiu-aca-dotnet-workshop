@@ -3,6 +3,12 @@ name: Deploy static content to Pages
 on:
   workflow_call:
 
+permissions:
+  contents: write         # Required for checkout and upload-pages-artifact actions
+  deployments: write      # Required for deploy-pages action
+  id-token: write         # Required for deploy-pages action if using OIDC for authentication
+  pages: write            # Required for configure-pages, upload-pages-artifact, and deploy-pages actions
+
 jobs:
   # Single deploy job since we're just deploying
   deploy:
@@ -13,15 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
       - name: Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v5
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4

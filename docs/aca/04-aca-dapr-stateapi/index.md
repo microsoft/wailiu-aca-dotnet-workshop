@@ -32,11 +32,7 @@ Dapr's state management API allows you to save, read, and query key/value pairs 
 
 To try out the State Management APIs, run the Backend API from VS Code by running the following command.
 
-=== ".NET 6 or below"
-
-    --8<-- "snippets/dapr-run-backend-api.md:basic-dotnet6"
-
-=== ".NET 7 or above"
+=== ".NET 8 or above"
 
     --8<-- "snippets/dapr-run-backend-api.md:basic"
 
@@ -125,27 +121,20 @@ Whereas in the previous section we demonstrated using Dapr State Store without c
 
 Similar to what we have done in the Frontend Web App, we need to use Dapr Client SDK to manage the state store. Update the below file with the added Dapr package reference:
 
-=== ".NET 6"
-    === "TasksTracker.TasksManager.Backend.Api.csproj"
-
-        ```xml
-        <ItemGroup>
-            <PackageReference Include="Dapr.AspNetCore" Version="{{ dapr.version }}" />
-        </ItemGroup>
-        ```
-
-=== ".NET 7"
-    === "TasksTracker.TasksManager.Backend.Api.csproj"
-
-        ```xml hl_lines="10"
-        --8<-- "docs/aca/04-aca-dapr-stateapi/Backend.Api-dotnet7.csproj"
-        ```
-
 === ".NET 8"
+
     === "TasksTracker.TasksManager.Backend.Api.csproj"
 
         ```xml hl_lines="11"
         --8<-- "docs/aca/04-aca-dapr-stateapi/Backend.Api-dotnet8.csproj"
+        ```
+
+=== ".NET 9"
+
+    === "TasksTracker.TasksManager.Backend.Api.csproj"
+
+        ```xml hl_lines="10"
+        --8<-- "docs/aca/04-aca-dapr-stateapi/Backend.Api-dotnet9.csproj"
         ```
 
 #### 2.2 Create a New Concrete Implementation to Manage Tasks Persistence
@@ -175,11 +164,21 @@ Now we need to register the new service named `TasksStoreManager` and `DaprClien
 !!! note
     Do not forget to comment out the registration of the `FakeTasksManager` service as we don't want to store tasks in memory anymore.
 
-=== "Program.cs"
+=== ".NET 8"
 
-    ```csharp hl_lines="7-9"
-    --8<-- "docs/aca/04-aca-dapr-stateapi/Program.cs"
-    ```
+    === "Program.cs"
+
+        ```csharp hl_lines="7-9"
+        --8<-- "docs/aca/04-aca-dapr-stateapi/Program-dotnet8.cs"
+        ```
+
+=== ".NET 9"
+
+    === "Program.cs"
+
+        ```csharp hl_lines="7-9"
+        --8<-- "docs/aca/04-aca-dapr-stateapi/Program-dotnet9.cs"
+        ```
 
 - Let's verify that the Dapr dependency is restored properly and that the project compiles. From VS Code Terminal tab, open developer command prompt or PowerShell terminal and navigate to the parent directory which hosts the `.csproj` project folder and build the project.
 
@@ -205,7 +204,7 @@ You need to set the variable name of the `$COSMOS_DB_ACCOUNT` to a unique name a
 ```shell
 $COSMOS_DB_ACCOUNT="cosmos-tasks-tracker-state-store-$RANDOM_STRING"
 $COSMOS_DB_DBNAME="tasksmanagerdb"
-$COSMOS_DB_CONTAINER="taskscollection" 
+$COSMOS_DB_CONTAINER="taskscollection"
 
 # Check if Cosmos account name already exists globally
 $result = az cosmosdb check-name-exists `
@@ -219,13 +218,13 @@ if ($result -eq "false") {
     az cosmosdb create `
     --name $COSMOS_DB_ACCOUNT `
     --resource-group $RESOURCE_GROUP
-    
+
     # Create a SQL API database
     az cosmosdb sql database create `
     --name $COSMOS_DB_DBNAME `
     --resource-group $RESOURCE_GROUP `
     --account-name $COSMOS_DB_ACCOUNT
-    
+
     # Create a SQL API container
     az cosmosdb sql container create `
     --name $COSMOS_DB_CONTAINER `
@@ -234,13 +233,13 @@ if ($result -eq "false") {
     --database-name $COSMOS_DB_DBNAME `
     --partition-key-path "/id" `
     --throughput 400
-    
+
     $COSMOS_DB_ENDPOINT=(az cosmosdb show `
     --name $COSMOS_DB_ACCOUNT `
     --resource-group $RESOURCE_GROUP `
     --query documentEndpoint `
     --output tsv)
-    
+
     echo "Cosmos DB Endpoint: "
     echo $COSMOS_DB_ENDPOINT
 }
@@ -284,8 +283,8 @@ To add the component file state store, add a new folder named **components** und
 !!! info
     You need to replace the **masterKey** value with your Cosmos Account key. Remember this is only needed for local development debugging, we will not be using the masterKey when we deploy to ACA.
 
-    Replace the **url** value with the URI value of your Azure Cosmos DB account. You can get that from the [Azure portal](https://portal.azure.com){target=_blank} by navigating to the Azure Cosmos DB account overview page and get the uri value from there. 
-    Basically the uri should have the following structure. [https://COSMOS_DB_ACCOUNT.documents.azure.com:443/](https://COSMOS_DB_ACCOUNT.documents.azure.com:443/).
+    Replace the **url** value with the URI value of your Azure Cosmos DB account. You can get that from the [Azure portal](https://portal.azure.com){target=_blank} by navigating to the Azure Cosmos DB account overview page and get the uri value from there.
+    Basically, the uri should have the following structure: [https://COSMOS_DB_ACCOUNT.documents.azure.com:443/](https://COSMOS_DB_ACCOUNT.documents.azure.com:443/).
 
 === "dapr-statestore-cosmos.yaml"
 
@@ -297,7 +296,7 @@ To add the component file state store, add a new folder named **components** und
     - We've used the name `statestore` which should match the name of statestore we've used in the `TaskStoreManager.cs` file. As well, we have set the metadata key/value to allow us to connect to Azure Cosmos DB.
     - We've updated the other metadata keys such as `database`, `collection`, etc... to match the values of your Cosmos DB instance. For full metadata specs, you can check this [page](https://docs.dapr.io/reference/components-reference/supported-state-stores/setup-azure-cosmosdb/){target=_blank}.
     - By default, all dapr-enabled container apps within the same environment will load the full set of deployed components. By adding `scopes` to a component, you tell the Dapr sidecars for each respective container app which components to load at runtime.
-    Using scopes is recommended for production workloads. In our case, we have set the scopes to `tasksmanager-backend-api` which represents the dapr-app-id which is associated to the container app that needs access to Azure Cosmos DB State Store as this will be the application that needs access to Azure Cosmos DB State Store. More about scopes can be found on this [link](https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml#component-scopes){target=_blank}.
+    Using scopes is recommended for production workloads. In our case, we have set the scopes to `tasksmanager-backend-api` which represents the dapr-app-id which is associated to the container app that needs access to Azure Cosmos DB State Store as this will be the application that needs access to Azure Cosmos DB State Store. More about scopes can be found on this [link](https://learn.microsoft.com/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml#component-scopes){target=_blank}.
 
 !!! note
     Dapr component scopes correspond to the Dapr application ID of a container app, not the container app name.
@@ -315,11 +314,7 @@ This will instruct dapr to load the local projects components located at **./com
 
 If you have been using the dapr cli commands instead of the aforementioned debugging then you will need to execute the backend api with the resources-path property as follows.
 
-=== ".NET 6 or below"
-
-    --8<-- "snippets/dapr-run-backend-api.md:dapr-components-dotnet6"
-
-=== ".NET 7 or above"
+=== ".NET 8 or above"
 
     --8<-- "snippets/dapr-run-backend-api.md:dapr-components"
 
@@ -348,9 +343,9 @@ If we need to totally omit the key prefix, so it is accessed across multiple Dap
 
 #### 3.3 Configure Managed Identities in Container App
 
-As we highlighted earlier, we'll not use a connection strings to establish the relation between our Container App and Azure Cosmos DB when we deploy to ACA. Cosmos DB Master Key/Connection string was only used when debugging locally. Now we will rely on Managed Identities to allow our container app to access Cosmos DB. With [Manged Identities](https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml){target=_blank} you do't worry about storing the keys securely and rotate them inside your application. This approach is safer and easier to manage.
+As we highlighted earlier, we'll not use a connection strings to establish the relation between our Container App and Azure Cosmos DB when we deploy to ACA. Cosmos DB Master Key/Connection string was only used when debugging locally. Now we will rely on Managed Identities to allow our container app to access Cosmos DB. With [Manged Identities](https://learn.microsoft.com/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml){target=_blank} you do't worry about storing the keys securely and rotate them inside your application. This approach is safer and easier to manage.
 
-We will be using a `system-assigned` identity with a role assignment to grant our Backend API container app permissions to access data stored in Cosmos DB. We need to assign it a custom role for the Cosmos DB data plane. In this example ae are going to use a [built-in role](https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-rbac#built-in-role-definitions){target=_blank}, named `Cosmos DB Built-in Data Contributor`, which grants our application full read-write access to the data. You can optionally create custom, fine-tuned roles following the instructions in the [official docs](https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-rbac){target=_blank}.
+We will be using a `system-assigned` identity with a role assignment to grant our Backend API container app permissions to access data stored in Cosmos DB. We need to assign it a custom role for the Cosmos DB data plane. In this example ae are going to use a [built-in role](https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac#built-in-role-definitions){target=_blank}, named `Cosmos DB Built-in Data Contributor`, which grants our application full read-write access to the data. You can optionally create custom, fine-tuned roles following the instructions in the [official docs](https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac){target=_blank}.
 
 #### 3.3.1 Create system-assigned identity for our Backend API Container App
 
@@ -389,7 +384,7 @@ Keep a note of the property `principalId` as we are going to use it in the next 
 #### 3.3.2 Assign the Container App System-Identity To the Built-in Cosmos DB Role
 
 Next, we need to associate the container app system-identity with the target Cosmos DB resource.
-You can read more about Azure built-in roles for Cosmos DB or how to create custom fine-tuned roles [here](https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-rbac#built-in-role-definitions){target=_blank}.
+You can read more about Azure built-in roles for Cosmos DB or how to create custom fine-tuned roles [here](https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac#built-in-role-definitions){target=_blank}.
 Run the command below to associate the container app `system-assigned` identity with `Cosmos DB Built-in Data Contributor` role.
 
 !!! note
@@ -397,7 +392,7 @@ Run the command below to associate the container app `system-assigned` identity 
     Remember to replace the placeholders with your own values:
 
 ```shell
-$ROLE_ID = "00000000-0000-0000-0000-000000000002" #"Cosmos DB Built-in Data Contributor" 
+$ROLE_ID = "00000000-0000-0000-0000-000000000002" #"Cosmos DB Built-in Data Contributor"
 
 az cosmosdb sql role assignment create `
 --resource-group $RESOURCE_GROUP `
@@ -411,7 +406,7 @@ az cosmosdb sql role assignment create `
 
 We are almost ready to deploy all local changes from this module and the previous module to ACA. But before we do that, we need one last addition.
 
-We have to create a [dapr component schema file](https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml#component-schema){target=_blank} for Azure Cosmos DB which meets the specs defined by
+We have to create a [dapr component schema file](https://learn.microsoft.com/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml#component-schema){target=_blank} for Azure Cosmos DB which meets the specs defined by
 Azure Container Apps. The reason for this variance is that ACA Dapr schema is slightly simplified to support Dapr components and removes unnecessary fields, including `apiVersion`, `kind`, and redundant metadata and spec properties.
 
 #### 3.4.1 Create an ACA-Dapr Component File For State Store Management
@@ -486,26 +481,26 @@ az containerapp dapr enable `
     This `dapr-app-id` will be used for service discovery, state encapsulation and the pub/sub consumer ID.
     - We've set the `dapr-app-port` which is the port our applications are listening on which will be used by Dapr for communicating to our applications.
 
-    For a complete list of the supported Dapr sidecar configurations in Container Apps, you can refer to [this link](https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml#dapr-enablement){target=_blank}.
+    For a complete list of the supported Dapr sidecar configurations in Container Apps, you can refer to [this link](https://learn.microsoft.com/azure/container-apps/dapr-overview?tabs=bicep1%2Cyaml#dapr-enablement){target=_blank}.
 
 #### 3.4.5 Deploy New Revisions of the Frontend Web App and Backend API to Container Apps
 
 The last thing we need to do here is to update both container apps and deploy the new images from ACR. To do so we need to run the commands found below.
 
 ```shell
-# Update Frontend web app container app and create a new revision 
+# Update Frontend web app container app and create a new revision
 az containerapp update `
 --name $FRONTEND_WEBAPP_NAME  `
 --resource-group $RESOURCE_GROUP `
 --revision-suffix v$TODAY
 
-# Update Backend API App container app and create a new revision 
+# Update Backend API App container app and create a new revision
 az containerapp update `
 --name $BACKEND_API_NAME  `
 --resource-group $RESOURCE_GROUP `
 --revision-suffix v$TODAY-1
 
-echo "Azure Frontend UI URL:" 
+echo "Azure Frontend UI URL:"
 echo $FRONTEND_UI_BASE_URL
 ```
 
