@@ -130,7 +130,9 @@ module containerAppsEnvironment 'modules/container-apps-environment.bicep' ={
    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
    applicationInsightName: applicationInsightName
     location: location
-    tags: tags
+    tags: {
+      tag1 : 'tag1'
+    }
   }
 }
 
